@@ -28,9 +28,9 @@ void set(uint8 *map, int i, int j, int s) {
   int col = j%8;
   int mask = (1<<col); // the bit we are going to set
   if (s) {
-    row |= mask; // set the position to true
+    map[i%8] = row | mask; // set the position to true
   } else {
-    row &= !mask; // clear the position
+    map[i%8] = row & !mask; // clear the position
   }
 }
 
@@ -43,8 +43,7 @@ void setup() {
   //   mled.disBuffer[i]=current[i];  //full screen
   // }
 
-  mled.clear();
-  delay(5000);
+  // mled.clear();
 }
 
 uint8 count = 1;
@@ -52,8 +51,8 @@ uint8 count = 1;
 void loop() {
 
   // use bottom row for progress
-  count = count<<1;
-  mled.disBuffer[0]=count;
+  count++;
+  // mled.disBuffer[0]=count;
 
   // load current into the display
   for(int i=1; i<8; i++)  {
@@ -61,11 +60,13 @@ void loop() {
   }
   mled.display();
 
+  delay(2000);
+
   // copy current into previous
   loadState(previous,current);
 
   for(int i=0;i<8;i++){
-     for(int j=0;i<8;j++) {
+     for(int j=0;j<8;j++) {
 
       int p = get(previous, i,j);
       int alive = 0;
@@ -74,31 +75,35 @@ void loop() {
         for (int l=-1; l<2; l++) {
 
           if (k==0 && l==0) {
-            continue;
+            continue; // don't count ourselves
           }
           if (get(previous,i+k,j+l)) {
             alive++; // count alive neighbors
-          }
-          if (p) { // the current cell is alive
-            switch (alive) {
-              case 0:
-              case 1:
-                set(current,i,j,0); // underpopulation
-                break;
-              case 2:
-              case 3:
-                set(current,i,j,1); // just right, live on
-                break;
-              default:
-                set(current,i,j,0); // overpopulation
-            }
-          } else { // the current cell is dead
-            if (alive==3) {
-              set(current, i,j,1); // reproduction creates new cell
-            }
+            mled.disBuffer[i]=alive;
+            mled.display();
           }
         }
       }
+
+      if (p) { // the current cell is alive
+        switch (alive) {
+          case 0:
+          case 1:
+            set(current,i,j,0); // underpopulation
+            break;
+          case 2:
+          case 3:
+            set(current,i,j,1); // just right, live on
+            break;
+          default:
+            set(current,i,j,0); // overpopulation
+        }
+      } else { // the current cell is dead
+        if (alive==3) {
+          set(current, i,j,1); // reproduction creates new cell
+        }
+      }
+
     }
   }
 
